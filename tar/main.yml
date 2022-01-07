@@ -1,0 +1,44 @@
+--- 
+- name: Unarchive grafana file
+  unarchive:
+    src: "{{ grafana_version }}"
+    dest: /opt/smicro/grafana
+    remote_src: yes
+
+- name: export grafana_home
+  become: yes
+  lineinfile: dest=/root/.bash_profile line='export GRAFANA_HOME=/opt/smicro/grafana/grafana-8.1.5' insertafter='EOF' state=present
+  
+
+- name: export path
+  become: yes
+  lineinfile: dest=/root/.bash_profile line='export PATH=$PATH:$GRAFANA_HOME/bin' insertafter='EOF' state=present   
+
+
+- name: enable and start grafana-server
+  service:
+    name: grafana-server
+    enabled: yes
+    state: started
+
+- name: wait for service up
+  uri:
+    url: "http://sm2.dev.com:3000"
+    status_code: 200
+  register: __result
+  until: __result.status == 200
+  retries: 120
+  delay: 1
+
+- name: change admin password for grafana gui
+  shell : "grafana-cli admin reset-admin-password {{ grafana_admin_password }}"
+  register: __command_admin
+  changed_when: __command_admin.rc !=0
+  ignore_errors: yes
+
+
+- name: install csv plugins
+  shell: "grafana-cli plugins install marcusolsson-csv-datasource" 
+  notify: restart grafana
+
+
