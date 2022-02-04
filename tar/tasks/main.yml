@@ -110,6 +110,14 @@
         path: /home/slave1/Downloads/smicro.json
       become: yes
       become_user: root
+      
+    
+ - name: allow csv plugin
+  lineinfile: dest=/opt/smicro/grafana/grafana-8.1.5/conf/defaults.ini line='[plugin.marcusolsson-csv-datasource]' insertafter='EOF' state=present
+
+- name: allow local path
+  lineinfile: dest=/opt/smicro/grafana/grafana-8.1.5/conf/defaults.ini line='allow_local_mode = true' insertafter='EOF' state=present
+
 
 
 -------------------------------------------------------------------------------------------
