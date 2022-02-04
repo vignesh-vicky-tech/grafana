@@ -97,6 +97,20 @@
     state: present
     grafana_plugins_dir: $GRAFANA_HOME
   notify: restart grafana
+---
+- hosts: localhost
+  tasks:
+    - name: Import Grafana dashboard smicro
+      community.grafana.grafana_dashboard:
+        grafana_url: http://192.168.56.112:3000
+        grafana_user: "admin"
+        grafana_password: "mypassword"
+        state: present
+        overwrite: yes
+        path: /home/slave1/Downloads/smicro.json
+      become: yes
+      become_user: root
+
 
 -------------------------------------------------------------------------------------------
 https://dlcdn.apache.org/spark/spark-3.2.0/spark-3.2.0-bin-hadoop3.2.tgz
