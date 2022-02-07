@@ -121,5 +121,53 @@
 
 
 -------------------------------------------------------------------------------------------
-https://dlcdn.apache.org/spark/spark-3.2.0/spark-3.2.0-bin-hadoop3.2.tgz
+---
+- name: Unarchive grafana file
+  unarchive:
+    src: "{{ grafana_src }}"
+    dest: /opt/smicro/grafana
+    remote_src: yes 
+
+- name: export grafana_home
+  lineinfile: dest=~/.bash_profile line='export GRAFANA_HOME=/opt/smicro/grafana/grafana-8.1.5' insertafter='EOF' state=present
+
+- name: export path
+  lineinfile: dest=~/.bash_profile line='export PATH=$PATH:$GRAFANA_HOME/bin' insertafter='EOF' state=present
+
+- name: Source profile
+  shell: "source ~/.bash_profile"
+
+- name: allow csv plugin
+  lineinfile: dest=/opt/smicro/grafana/grafana-8.1.5/conf/defaults.ini line='[plugin.marcusolsson-csv-datasource]' insertafter='EOF' state=present
+
+- name: allow local path
+  lineinfile: dest=/opt/smicro/grafana/grafana-8.1.5/conf/defaults.ini line='allow_local_mode = true' insertafter='EOF' state=present
+
+- name: start grafana-server
+  shell: "nohup grafana-server -homepath $GRAFANA_HOME web </dev/null >/dev/null 2>&1 &"
+
+- name: wait for service up
+  uri:
+    url: "{{ grafana_url }}"
+    status_code: 200
+  register: __result
+  until: __result.status==200
+  retries: 5
+  delay: 1
+     
+- name: change admin password for grafana gui
+  shell : "grafana-cli -homepath $GRAFANA_HOME admin reset-admin-password {{ grafana_admin_password }}"
+  register: __command_admin
+  changed_when: __command_admin.rc !=0
+ 
+
+- name: Install - update Grafana csv plugin
+  become: yes
+  grafana_plugin:
+    name: marcusolsson-csv-datasource
+    version: latest
+    state: present
+    grafana_plugins_dir: $GRAFANA_HOME
+  notify: restart grafana
+
 
